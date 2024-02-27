@@ -23,7 +23,8 @@ segment_fields = {
     'indexing_at': TimestampField,
     'completed_at': TimestampField,
     'error': fields.String,
-    'stopped_at': TimestampField
+    'stopped_at': TimestampField,
+    'extended_data': fields.String,
 }
 
 segment_list_response = {

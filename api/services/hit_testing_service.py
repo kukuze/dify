@@ -134,7 +134,6 @@ class HitTestingService:
         # 嵌入查询文本
         query_embedding = embeddings.embed_query(query)
         text_embeddings = [query_embedding]
-
         # 嵌入文档内容
         document_embeddings = embeddings.embed_documents([document.page_content for document in documents])
 
@@ -150,7 +149,6 @@ class HitTestingService:
         tsne_position_data = cls.get_tsne_positions_from_embeddings(text_embeddings)
 
         query_position = tsne_position_data.pop(0)
-
         i = 0
         records = []
         for document in documents:

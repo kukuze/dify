@@ -180,7 +180,7 @@ class OAIAPICompatLargeLanguageModel(_CommonOAI_API_Compat, LargeLanguageModel):
                     name=DefaultParameterName.TEMPERATURE.value,
                     label=I18nObject(en_US="Temperature"),
                     type=ParameterType.FLOAT,
-                    default=float(credentials.get('temperature', 0.7)),
+                    default=float(credentials.get('temperature', 0.5)),
                     min=0,
                     max=2,
                     precision=2
@@ -194,14 +194,14 @@ class OAIAPICompatLargeLanguageModel(_CommonOAI_API_Compat, LargeLanguageModel):
                     max=1,
                     precision=2
                 ),
-                ParameterRule(
-                    name="top_k",
-                    label=I18nObject(en_US="Top K"),
-                    type=ParameterType.INT,
-                    default=int(credentials.get('top_k', 1)),
-                    min=1,
-                    max=100
-                ),
+                # ParameterRule(
+                #     name="top_k",
+                #     label=I18nObject(en_US="Top K"),
+                #     type=ParameterType.INT,
+                #     default=int(credentials.get('top_k', 1)),
+                #     min=1,
+                #     max=100
+                # ),
                 ParameterRule(
                     name=DefaultParameterName.FREQUENCY_PENALTY.value,
                     label=I18nObject(en_US="Frequency Penalty"),

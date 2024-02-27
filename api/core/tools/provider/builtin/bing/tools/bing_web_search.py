@@ -69,8 +69,8 @@ class BingSearchTool(BuiltinTool):
             for i, result in enumerate(search_results):
                 text += f'{i+1}: {result["name"]} - {result["snippet"]}\n'
 
-            text += '\n\nRelated Searches:\n'
-            for related in response['relatedSearches']['value']:
-                text += f'{related["displayText"]} - {related["webSearchUrl"]}\n'
+            # text += '\n\nRelated Searches:\n'
+            # for related in response['relatedSearches']['value']:
+            #     text += f'{related["displayText"]} - {related["webSearchUrl"]}\n'
 
             return self.create_text_message(text=self.summary(user_id=user_id, content=text))

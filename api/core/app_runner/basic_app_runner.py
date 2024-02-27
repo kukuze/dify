@@ -126,7 +126,7 @@ class BasicApplicationRunner(AppRunner):
                     stream=application_generate_entity.stream
                 )
                 return
-
+        # 这块是提示词里面的变量
         # fill in variable inputs from external data tools if exists
         external_data_tools = app_orchestration_config.external_data_variables
         if external_data_tools:

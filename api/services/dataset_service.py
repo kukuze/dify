@@ -1038,7 +1038,8 @@ class SegmentService:
             status='completed',
             indexing_at=datetime.datetime.utcnow(),
             completed_at=datetime.datetime.utcnow(),
-            created_by=current_user.id
+            created_by=current_user.id,
+            extended_data=args['extended_data']
         )
         if document.doc_form == 'qa_model':
             segment_document.answer = args['answer']
@@ -1101,7 +1102,8 @@ class SegmentService:
                 status='completed',
                 indexing_at=datetime.datetime.utcnow(),
                 completed_at=datetime.datetime.utcnow(),
-                created_by=current_user.id
+                created_by=current_user.id,
+                extended_data=segment_item['extended_data']
             )
             if document.doc_form == 'qa_model':
                 segment_document.answer = segment_item['answer']
@@ -1134,6 +1136,7 @@ class SegmentService:
             raise ValueError("Segment is indexing, please try again later")
         try:
             content = args['content']
+            segment.extended_data = args['extended_data']
             if segment.content == content:
                 if document.doc_form == 'qa_model':
                     segment.answer = args['answer']

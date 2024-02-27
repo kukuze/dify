@@ -1,3 +1,4 @@
+import inspect
 import threading
 from typing import Optional
 
@@ -5,6 +6,7 @@ from flask import current_app
 from langchain.tools import BaseTool
 from pydantic import BaseModel, Field
 
+from controllers.console.datasets import segments_extended_data_api
 from core.callback_handler.index_tool_callback_handler import DatasetIndexToolCallbackHandler
 from core.embedding.cached_embedding import CacheEmbedding
 from core.index.keyword_table_index.keyword_table_index import KeywordTableConfig, KeywordTableIndex
@@ -105,7 +107,8 @@ class DatasetRetrieverTool(BaseTool):
             threads = []
             if self.top_k > 0:
                 # retrieval source with semantic
-                if retrieval_model['search_method'] == 'semantic_search' or retrieval_model['search_method'] == 'hybrid_search':
+                if retrieval_model['search_method'] == 'semantic_search' or retrieval_model[
+                    'search_method'] == 'hybrid_search':
                     embedding_thread = threading.Thread(target=RetrievalService.embedding_search, kwargs={
                         'flask_app': current_app._get_current_object(),
                         'dataset_id': str(dataset.id),
@@ -123,7 +126,8 @@ class DatasetRetrieverTool(BaseTool):
                     embedding_thread.start()
 
                 # retrieval_model source with full text
-                if retrieval_model['search_method'] == 'full_text_search' or retrieval_model['search_method'] == 'hybrid_search':
+                if retrieval_model['search_method'] == 'full_text_search' or retrieval_model[
+                    'search_method'] == 'hybrid_search':
                     full_text_index_thread = threading.Thread(target=RetrievalService.full_text_index_search, kwargs={
                         'flask_app': current_app._get_current_object(),
                         'dataset_id': str(dataset.id),
@@ -191,14 +195,54 @@ class DatasetRetrieverTool(BaseTool):
                                                                                            float('inf')))
                 for segment in sorted_segments:
                     if segment.answer:
-                        document_context_list.append(f'question:{segment.content} answer:{segment.answer}')
+                        if segment.extended_data is not None:
+                            func = getattr(segments_extended_data_api, segment.extended_data, None)
+                            if func:
+                                # 检查函数参数
+                                params = inspect.signature(func).parameters
+                                needs_params = any(
+                                    param.default == inspect.Parameter.empty for param in params.values() if
+                                    param.name != 'self')
+                                # 根据函数是否需要参数来调用
+                                if needs_params:
+                                    # 如果函数需要参数，则解构字典为参数
+                                    import json
+
+                                    import requests
+                                    url = "http://127.0.0.1:5001/v1/completion-messages"
+                                    payload = json.dumps({
+                                        "inputs": {
+                                            "user_query": query,
+                                            "api_description": func._description,
+                                            "api_parameter_format": func._parameterFormat
+                                        },
+                                        "response_mode": "blocking",
+                                        "user": "参数提取"
+                                    })
+                                    headers = {
+                                        'Authorization': 'Bearer app-eV2DbKR6QV2wKxi4SM7OXVHS',
+                                        'Content-Type': 'application/json'
+                                    }
+                                    response = requests.request("POST", url, headers=headers, data=payload)
+
+                                    dict_params = json.loads(json.loads(response.text)["answer"])
+                                    # print(dict_params)
+                                    result = func(**dict_params)
+                                else:
+                                    # 如果函数不需要参数，则直接调用
+                                    result = func()
+                                print(result)
+                            else:
+                                print("Function not found.")
+                            document_context_list.append(f'question:{segment.content} answer:{result}')
+                        else:
+                            document_context_list.append(f'question:{segment.content} answer:{segment.answer}')
                     else:
                         document_context_list.append(segment.content)
                 if self.return_resource:
                     context_list = []
                     resource_number = 1
                     for segment in sorted_segments:
-                        context = {}
                         document = Document.query.filter(Document.id == segment.document_id,
                                                          Document.enabled == True,
                                                          Document.archived == False,

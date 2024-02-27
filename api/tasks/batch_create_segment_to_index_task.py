@@ -87,7 +87,8 @@ def batch_create_segment_to_index_task(job_id: str, content: list, dataset_id: s
                 created_by=user_id,
                 indexing_at=datetime.datetime.utcnow(),
                 status='completed',
-                completed_at=datetime.datetime.utcnow()
+                completed_at=datetime.datetime.utcnow(),
+                extended_data=segment['extended_data']
             )
             if dataset_document.doc_form == 'qa_model':
                 segment_document.answer = segment['answer']

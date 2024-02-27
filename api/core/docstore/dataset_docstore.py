@@ -120,6 +120,7 @@ class DatasetDocumentStore:
                     tokens=tokens,
                     enabled=False,
                     created_by=self._user_id,
+                    extended_data=None
                 )
                 if 'answer' in doc.metadata and doc.metadata['answer']:
                     segment_document.answer = doc.metadata.pop('answer', '')

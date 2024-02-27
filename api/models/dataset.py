@@ -359,7 +359,7 @@ class DocumentSegment(db.Model):
     completed_at = db.Column(db.DateTime, nullable=True)
     error = db.Column(db.Text, nullable=True)
     stopped_at = db.Column(db.DateTime, nullable=True)
-
+    extended_data = db.Column(db.String(255), nullable=True)
     @property
     def dataset(self):
         return db.session.query(Dataset).filter(Dataset.id == self.dataset_id).first()
