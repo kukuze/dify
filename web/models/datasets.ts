@@ -323,6 +323,7 @@ export type SegmentDetailModel = {
   error: string | null
   stopped_at: number
   answer?: string
+  extended_data?: string
 }
 
 export type SegmentsResponse = {
@@ -404,6 +405,7 @@ export type RelatedAppResponse = {
 export type SegmentUpdator = {
   content: string
   answer?: string
+  extended_data?: string;
   keywords?: string[]
 }
 

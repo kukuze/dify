@@ -271,3 +271,12 @@ type RetrievalMethodsRes = {
 export const fetchSupportRetrievalMethods: Fetcher<RetrievalMethodsRes, string> = (url) => {
   return get<RetrievalMethodsRes>(url)
 }
+interface ExtendedDataApiResponseItem {
+  value: string;
+  name: string;
+}
+
+type ExtendedDataApiResponse = ExtendedDataApiResponseItem[];
+export const fetchExtendedDataApiList : Fetcher<ExtendedDataApiResponse,string>=(url) => {
+  return get<ExtendedDataApiResponse>(url);
+};

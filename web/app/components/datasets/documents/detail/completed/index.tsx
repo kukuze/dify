@@ -29,6 +29,7 @@ import Button from '@/app/components/base/button'
 import NewSegmentModal from '@/app/components/datasets/documents/detail/new-segment-modal'
 import TagInput from '@/app/components/base/tag-input'
 import { useEventEmitterContextContext } from '@/context/event-emitter'
+import { fetchExtendedDataApiList } from '@/service/common'; // 确保导入API调用
 
 export const SegmentIndexTag: FC<{ positionId: string | number; className?: string }> = ({ positionId, className }) => {
   const localPositionId = useMemo(() => {
@@ -49,26 +50,28 @@ type ISegmentDetailProps = {
   embeddingAvailable: boolean
   segInfo?: Partial<SegmentDetailModel> & { id: string }
   onChangeSwitch?: (segId: string, enabled: boolean) => Promise<void>
-  onUpdate: (segmentId: string, q: string, a: string, k: string[]) => void
+  onUpdate: (segmentId: string, q: string, a: string, k: string[], extended_data: string) => void
   onCancel: () => void
   archived?: boolean
 }
 /**
  * Show all the contents of the segment
  */
-const SegmentDetailComponent: FC<ISegmentDetailProps> = ({
+const SegmentDetailComponent: FC<ISegmentDetailProps & { selectOptions: { value: string; name: string }[] }> = ({
   embeddingAvailable,
   segInfo,
   archived,
   onChangeSwitch,
   onUpdate,
   onCancel,
+  selectOptions, // 接收 selectOptions 作为 props
 }) => {
   const { t } = useTranslation()
   const [isEditing, setIsEditing] = useState(false)
   const [question, setQuestion] = useState(segInfo?.content || '')
   const [answer, setAnswer] = useState(segInfo?.answer || '')
   const [keywords, setKeywords] = useState<string[]>(segInfo?.keywords || [])
+  const [extended_data, setExtended_data] = useState(segInfo?.extended_data || '')
   const { eventEmitter } = useEventEmitterContextContext()
   const [loading, setLoading] = useState(false)
 
@@ -86,11 +89,13 @@ const SegmentDetailComponent: FC<ISegmentDetailProps> = ({
     setKeywords(segInfo?.keywords || [])
   }
   const handleSave = () => {
-    onUpdate(segInfo?.id || '', question, answer, keywords)
+    onUpdate(segInfo?.id || '', question, answer, keywords, extended_data)
   }
 
   const renderContent = () => {
+
     if (segInfo?.answer) {
+      // console.log(segInfo)
       return (
         <>
           <div className='mb-1 text-xs font-medium text-gray-500'>QUESTION</div>
@@ -112,6 +117,17 @@ const SegmentDetailComponent: FC<ISegmentDetailProps> = ({
             disabled={!isEditing}
             autoFocus
           />
+          <div className='mb-1 text-xs font-medium text-gray-500'>Please select an additional Api</div>
+          <SimpleSelect
+            defaultValue={extended_data}
+            items={selectOptions}
+            onSelect={item => {
+              console.log('Selected item:', item);
+              setExtended_data(item.value.toString()); // 更新选中的扩展数据
+            }}
+            disabled={!isEditing}
+          />
+
         </>
       )
     }
@@ -247,7 +263,24 @@ const Completed: FC<ICompletedProps> = ({
   const [loading, setLoading] = useState(false)
   const [total, setTotal] = useState<number | undefined>()
   const { eventEmitter } = useEventEmitterContextContext()
+  const [selectOptions, setSelectOptions] = useState<{ value: string; name: string }[]>([]);
 
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const data = await fetchExtendedDataApiList('/datasets/documents/segments/extendedDataApi');
+        const options = data.map(item => ({
+          value: item.value,
+          name: item.name + ":" + item.value
+        }));
+        setSelectOptions(options);
+      } catch (error) {
+        console.error('Failed to fetch extended data:', error);
+      }
+    };
+
+    fetchData();
+  }, []);
   const onChangeStatus = ({ value }: Item) => {
     setSelectedStatus(value === 'all' ? 'all' : !!value)
   }
@@ -319,16 +352,25 @@ const Completed: FC<ICompletedProps> = ({
     }
   }
 
-  const handleUpdateSegment = async (segmentId: string, question: string, answer: string, keywords: string[]) => {
+  const handleUpdateSegment = async (segmentId: string, question: string, answer: string, keywords: string[], extendedData: string) => {
     const params: SegmentUpdator = { content: '' }
     if (docForm === 'qa_model') {
-      if (!question.trim())
-        return notify({ type: 'error', message: t('datasetDocuments.segment.questionEmpty') })
-      if (!answer.trim())
-        return notify({ type: 'error', message: t('datasetDocuments.segment.answerEmpty') })
-
-      params.content = question
-      params.answer = answer
+      if (!question.trim()) {
+        return notify({ type: 'error', message: t('datasetDocuments.segment.questionEmpty') });
+      }
+      // 如果answer为空且selectedOption（或extended_data）有数据
+      if (!answer.trim() && extendedData) {
+        params.answer = "Please refer to the API interface data to answer";
+      } else if (!answer.trim()) {
+        // 如果answer为空但没有selectedOption（或extended_data）数据
+        return notify({ type: 'error', message: t('datasetDocuments.segment.answerEmpty') });
+      } else {
+        // 如果answer不为空，直接使用answer的值
+        params.answer = answer;
+      }
+      // 设置params.content和params.extended_data
+      params.content = question;
+      params.extended_data = extendedData;
     }
     else {
       if (!question.trim())
@@ -351,6 +393,7 @@ const Completed: FC<ICompletedProps> = ({
             seg.answer = res.data.answer
             seg.content = res.data.content
             seg.keywords = res.data.keywords
+            seg.extended_data = res.data.extended_data
             seg.word_count = res.data.word_count
             seg.hit_count = res.data.hit_count
             seg.index_node_hash = res.data.index_node_hash
@@ -402,7 +445,7 @@ const Completed: FC<ICompletedProps> = ({
         onClick={onClickCard}
         archived={archived}
       />
-      <Modal isShow={currSegment.showModal} onClose={() => {}} className='!max-w-[640px] !overflow-visible'>
+      <Modal isShow={currSegment.showModal} onClose={() => { }} className='!max-w-[640px] !overflow-visible'>
         <SegmentDetail
           embeddingAvailable={embeddingAvailable}
           segInfo={currSegment.segInfo ?? { id: '' }}
@@ -410,6 +453,7 @@ const Completed: FC<ICompletedProps> = ({
           onUpdate={handleUpdateSegment}
           onCancel={onCloseModal}
           archived={archived}
+          selectOptions={selectOptions}
         />
       </Modal>
       <NewSegmentModal
