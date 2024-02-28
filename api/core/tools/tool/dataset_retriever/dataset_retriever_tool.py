@@ -195,7 +195,7 @@ class DatasetRetrieverTool(BaseTool):
                                                                                            float('inf')))
                 for segment in sorted_segments:
                     if segment.answer:
-                        if segment.extended_data is not None:
+                        if segment.extended_data is not None and segment.extended_data != "":
                             func = getattr(segments_extended_data_api, segment.extended_data, None)
                             if func:
                                 # 检查函数参数
